@@ -1,4 +1,6 @@
+mod ast;
 mod lexer;
+mod parser;
 mod token;
 
 use crate::lexer::Lexer;
@@ -10,31 +12,31 @@ use std::{
 
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
-    let mut lox = Lox::new();
+    let mut y = Y::new();
 
     if args.len() > 2 {
-        println!("Usage: rlox <script>");
+        println!("Usage: y <script>");
         std::process::exit(64);
     }
 
     if args.len() == 2 {
-        lox.run_file(&args[1])?;
+        y.run_file(&args[1])?;
     } else {
-        lox.run_prompt()?;
+        y.run_prompt()?;
     }
 
-    if lox.had_error {
+    if y.had_error {
         std::process::exit(65);
     }
 
     Ok(())
 }
 
-struct Lox {
+struct Y {
     had_error: bool,
 }
 
-impl Lox {
+impl Y {
     fn new() -> Self {
         Self { had_error: false }
     }
