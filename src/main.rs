@@ -3,7 +3,7 @@ mod lexer;
 mod parser;
 mod token;
 
-use crate::lexer::Lexer;
+use crate::{lexer::Lexer, parser::Parser};
 
 use std::{
     env, fs,
@@ -73,12 +73,21 @@ impl Y {
         let mut lexer = Lexer::new(source);
         match lexer.scan_tokens() {
             Ok(tokens) => {
-                for token in tokens {
-                    println!("{}", token);
+                let mut parser = Parser::new(&tokens);
+                match parser.parse() {
+                    Ok(expression) => {
+                        if !self.had_error {
+                            println!("{}", expression.print());
+                        }
+                    }
+                    Err(parser_error) => {
+                        eprintln!("{:?}", parser_error);
+                        self.had_error = true;
+                    }
                 }
             }
-            Err(e) => {
-                eprintln!("{:?}", e);
+            Err(lexer_error) => {
+                eprintln!("{:?}", lexer_error);
                 self.had_error = true;
             }
         }

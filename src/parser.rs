@@ -1,17 +1,17 @@
 use crate::ast::{Expr, Value};
 use crate::token::{Token, TokenType};
 
-struct Parser {
-    tokens: Vec<Token>,
+pub struct Parser<'a> {
+    pub tokens: &'a Vec<Token>,
     current: usize,
 }
 
-impl Parser {
-    fn new(tokens: Vec<Token>) -> Self {
+impl<'a> Parser<'a> {
+    pub fn new(tokens: &'a Vec<Token>) -> Self {
         Self { tokens, current: 0 }
     }
 
-    fn parse(&mut self) -> Result<Expr, ParserError> {
+    pub fn parse(&mut self) -> Result<Expr, ParserError> {
         self.expression()
     }
 
@@ -175,11 +175,34 @@ impl Parser {
             ))
         }
     }
+
+    fn synchronize(&mut self) {
+        self.advance();
+
+        while !self.is_at_end() {
+            if self.previous().token_type == TokenType::Semicolon {
+                return;
+            }
+            match self.peek().token_type {
+                TokenType::Class
+                | TokenType::Fun
+                | TokenType::Var
+                | TokenType::For
+                | TokenType::If
+                | TokenType::While
+                | TokenType::Print
+                | TokenType::Return => return,
+                _ => {}
+            }
+            self.advance();
+        }
+    }
 }
 
+#[derive(Debug)]
 pub struct ParserError {
-    message: String,
-    line: usize,
+    pub message: String,
+    pub line: usize,
 }
 
 impl ParserError {

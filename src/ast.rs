@@ -24,7 +24,7 @@ pub enum Expr {
 }
 
 impl Expr {
-    fn print(&self) -> String {
+    pub fn print(&self) -> String {
         match self {
             Expr::Binary {
                 left,
