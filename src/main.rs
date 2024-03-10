@@ -1,7 +1,7 @@
 mod lexer;
 mod token;
 
-use crate::lexer::{Lexer, LexerError};
+use crate::lexer::Lexer;
 
 use std::{
     env, fs,
@@ -75,21 +75,10 @@ impl Lox {
                     println!("{}", token);
                 }
             }
-            Err(e) => self.error(0, "Lexer error"),
+            Err(e) => {
+                eprintln!("{:?}", e);
+                self.had_error = true;
+            }
         }
     }
-
-    fn error(&mut self, line: usize, message: &str) {
-        self.report(line, "", message);
-        self.had_error = true;
-    }
-
-    fn report(&self, line: usize, location: &str, message: &str) {
-        eprintln!("[line {}] Error {}: {}", line, location, message);
-    }
-}
-
-#[derive(Debug)]
-enum ProgramError {
-    LexerError(LexerError),
 }

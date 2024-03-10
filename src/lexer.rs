@@ -1,5 +1,5 @@
 use crate::token::{Token, TokenType};
-use std::{mem, str::Chars};
+use std::{error::Error, fmt, mem, str::Chars};
 
 pub struct Lexer<'a> {
     source: &'a str,
@@ -166,17 +166,17 @@ impl<'a> Lexer<'a> {
 
     fn string(&mut self) -> Result<(), LexerError> {
         while let Some(c) = self.advance() {
-            if c == '"' {
-                break;
+            match c {
+                '"' => break,
+                '\n' => self.line += 1,
+                _ => {}
             }
-            if c == '\n' {
-                LexerError::UnterminatedString { line: self.line };
-                self.line += 1;
+
+            if self.is_at_end() {
+                return Err(LexerError::UnterminatedString { line: self.line });
             }
         }
-        if self.is_at_end() {
-            return Ok(());
-        }
+
         let literal = self.source[self.start + 1..self.current - 1].to_string();
         self.add_token(TokenType::String, Some(literal))?;
 
@@ -242,3 +242,18 @@ pub enum LexerError {
     UnexpectedCharacter { line: usize, character: char },
     UnterminatedString { line: usize },
 }
+
+impl fmt::Display for LexerError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            LexerError::UnexpectedCharacter { line, character } => {
+                write!(f, "Unexpected character '{}' at line {}", character, line)
+            }
+            LexerError::UnterminatedString { line } => {
+                write!(f, "Unterminated string at line {}", line)
+            }
+        }
+    }
+}
+
+impl Error for LexerError {}
