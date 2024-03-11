@@ -1,11 +1,9 @@
+use crate::environment::Environment;
+use crate::error::RuntimeError;
 use crate::token::Token;
-
-pub enum Value {
-    Number(f64),
-    String(String),
-    Boolean(bool),
-    Nil,
-}
+use crate::value::Value;
+use core::cell::RefCell;
+use std::rc::Rc;
 
 pub enum Expr {
     Binary {
@@ -30,8 +28,8 @@ impl Expr {
                 left,
                 operator,
                 right,
-            } => parenthesize(operator.lexeme(), &[left, right]),
-            Expr::Unary { operator, right } => parenthesize(operator.lexeme(), &[right]),
+            } => parenthesize(&operator.lexeme, &[left, right]),
+            Expr::Unary { operator, right } => parenthesize(&operator.lexeme, &[right]),
             Expr::Literal { value } => match value {
                 Value::Number(n) => n.to_string(),
                 Value::String(s) => s.clone(),
@@ -51,4 +49,40 @@ fn parenthesize(name: &str, exprs: &[&Expr]) -> String {
         s += &format!(" {}", expr.print());
     }
     s + ")"
+}
+
+pub enum Stmt {
+    Expression(Expr),
+    Print(Expr),
+    Var(String, Option<Expr>),
+    Block(Vec<Stmt>),
+}
+
+impl Stmt {
+    pub fn execute(&self, env: Rc<RefCell<Environment>>) -> Result<(), RuntimeError> {
+        match self {
+            Stmt::Expression(expr) => {
+                expr.evaluate(&env)?;
+            }
+            Stmt::Print(expr) => {
+                let value = expr.evaluate(&env)?;
+                println!("{}", value);
+            }
+            Stmt::Var(name, maybe_expr) => {
+                let value = if let Some(expr) = maybe_expr {
+                    expr.evaluate(&env)?
+                } else {
+                    Value::Nil
+                };
+                env.borrow_mut().define(name.to_string(), value);
+            }
+            Stmt::Block(statements) => {
+                let new_env = Environment::with_enclosing(Rc::clone(&env));
+                for statement in statements {
+                    statement.execute(new_env.clone())?;
+                }
+            }
+        }
+        Ok(())
+    }
 }

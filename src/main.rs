@@ -1,9 +1,15 @@
 mod ast;
+mod environment;
+mod error;
+mod interpreter;
 mod lexer;
 mod parser;
 mod token;
+mod value;
 
+use crate::environment::Environment;
 use crate::{lexer::Lexer, parser::Parser};
+use std::{cell::RefCell, rc::Rc};
 
 use std::{
     env, fs,
@@ -75,9 +81,19 @@ impl Y {
             Ok(tokens) => {
                 let mut parser = Parser::new(&tokens);
                 match parser.parse() {
-                    Ok(expression) => {
+                    Ok(statements) => {
                         if !self.had_error {
-                            println!("{}", expression.print());
+                            let global_env = Rc::new(RefCell::new(Environment::new()));
+
+                            for statement in statements {
+                                match statement.execute(global_env.clone()) {
+                                    Ok(_) => {}
+                                    Err(runtime_error) => {
+                                        eprintln!("{:?}", runtime_error);
+                                        self.had_error = true;
+                                    }
+                                }
+                            }
                         }
                     }
                     Err(parser_error) => {

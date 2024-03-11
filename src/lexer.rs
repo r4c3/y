@@ -1,5 +1,6 @@
+use crate::error::LexerError;
 use crate::token::{Token, TokenType};
-use std::{error::Error, fmt, mem, str::Chars};
+use std::{mem, str::Chars};
 
 pub struct Lexer<'a> {
     source: &'a str,
@@ -236,24 +237,3 @@ impl<'a> Lexer<'a> {
         self.current >= self.source.len()
     }
 }
-
-#[derive(Debug)]
-pub enum LexerError {
-    UnexpectedCharacter { line: usize, character: char },
-    UnterminatedString { line: usize },
-}
-
-impl fmt::Display for LexerError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            LexerError::UnexpectedCharacter { line, character } => {
-                write!(f, "Unexpected character '{}' at line {}", character, line)
-            }
-            LexerError::UnterminatedString { line } => {
-                write!(f, "Unterminated string at line {}", line)
-            }
-        }
-    }
-}
-
-impl Error for LexerError {}
