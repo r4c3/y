@@ -12,7 +12,11 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse(&mut self) -> Result<Expr, ParserError> {
-        self.expression()
+        let result = self.expression();
+        if result.is_err() {
+            self.synchronize();
+        }
+        result
     }
 
     fn expression(&mut self) -> Result<Expr, ParserError> {
@@ -131,8 +135,7 @@ impl<'a> Parser<'a> {
     }
 
     fn primary(&mut self) -> Result<Expr, ParserError> {
-        let token = self.peek();
-        match token.token_type {
+        match self.peek().token_type {
             TokenType::False => {
                 self.advance();
                 Ok(Expr::Literal {
@@ -149,6 +152,35 @@ impl<'a> Parser<'a> {
                 self.advance();
                 Ok(Expr::Literal { value: Value::Nil })
             }
+            TokenType::Number | TokenType::String => {
+                let token = self.advance();
+                match token.token_type {
+                    TokenType::Number => {
+                        let value = token
+                            .literal
+                            .as_ref()
+                            .unwrap()
+                            .parse()
+                            .unwrap_or_else(|_| panic!("Failed to parse number."));
+                        Ok(Expr::Literal {
+                            value: Value::Number(value),
+                        })
+                    }
+                    TokenType::String => {
+                        let value = token.literal.as_ref().unwrap().clone();
+                        Ok(Expr::Literal {
+                            value: Value::String(value),
+                        })
+                    }
+                    _ => unreachable!(),
+                }
+            }
+            TokenType::Identifier => {
+                let token = self.advance();
+                Ok(Expr::Literal {
+                    value: Value::String(token.lexeme().to_string()),
+                })
+            }
             TokenType::LeftParen => {
                 self.advance();
                 let expr = self.expression()?;
@@ -158,8 +190,8 @@ impl<'a> Parser<'a> {
                 Ok(Expr::Grouping(Box::new(expr)))
             }
             _ => Err(ParserError::new(
-                format!("Unexpected token {:?}", token.token_type),
-                token.line,
+                format!("Unexpected token {:?}", self.peek().token_type),
+                self.peek().line,
             )),
         }
     }
