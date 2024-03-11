@@ -1,4 +1,4 @@
-# Y
+# y
 A trivially-okay general purpose scripting language.
 
 Features:
