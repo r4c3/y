@@ -1,5 +1,5 @@
 # y
-A trivially-okay general purpose scripting language.
+A trivial dynamic general purpose scripting language.
 
 Features:
 - blazingly slow
